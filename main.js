@@ -23,18 +23,42 @@ class Site {
     
     this.camera.position.z = 200;
     this.camera.fov = 2 * Math.atan(this.height / 2 / 200) * (180 / Math.PI);
-
+    
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
     });
+    this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(this.width, this.height);
     this.container.appendChild(this.renderer.domElement);
 
     this.renderer.render(this.scene, this.camera);
 
     this.addImages();
+    this.resize();
+    this.setupResize();
+    this.setPosition();
     this.render();
+  }
+
+  resize() {
+    this.width = this.container.offsetWidth;
+    this.height = this.container.offsetHeight;
+    this.renderer.setSize(this.width, this.height);
+    this.camera.aspect = this.width/this.height;
+    this.camera.updateProjectionMatrix();
+    this.setPosition();
+    }
+
+    setupResize(){
+      window.addEventListener("resize", this.resize.bind(this));
+    }
+  setPosition(){
+    this.imageStore.forEach(img => {
+      const bounds = img.img.getBoundingClientRect();
+      img.mesh.position.y = bounds.top + this.height / 2 - bounds.height /2;
+      img.mesh.position.x = bounds.left - this.width / 2 + bounds.width /2;
+    })
   }
 
   addImages(){
@@ -46,7 +70,7 @@ class Site {
       uImage: { value: textures[0] },
     };
 
-    const vertexShader = `
+    const vertex = `
       varying vec2 vUv;
 
       void main() {
@@ -55,7 +79,7 @@ class Site {
       }
     `;
 
-    const fragmentShader = `
+    const fragment = `
       uniform sampler2D uImage;
       varying vec2 vUv;
 
@@ -66,8 +90,8 @@ class Site {
 
     this.material = new THREE.ShaderMaterial({
       uniforms: uniforms,
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
+      vertexShader: vertex,
+      fragmentShader: fragment,
       transparent: true,
     });
 
